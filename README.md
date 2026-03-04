@@ -111,6 +111,10 @@ export XAI_API_KEY=your-key
    - **Overview** (e.g., "what is this codebase"): same search with doc-type boosting
    - CozoDB adds graph expansion (1-hop neighbors) and skill-token matching via a unified Datalog query
 
+## Demo
+
+See [demo.md](demo.md) for a walkthrough with executable examples and captured output covering both backends, query classification, graph expansion, and JSON output.
+
 ## Development
 
 ```bash
