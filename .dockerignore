@@ -1,0 +1,15 @@
+*.db
+*_bench_*.json
+.embed_cache/
+.git/
+run_go.sh
+gorun.sh
+validate.sh
+run_validate.sh
+_run_go.sh
+_validate.sh
+_run.sh
+docs/
+specs/
+*.md
+!README.md

@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: legacylens
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: LEGACYLENS_REPO
+        value: ./third_party/M_blas
+      - key: LEGACYLENS_BACKEND
+        value: sqlite
+      - key: LEGACYLENS_SERVE
+        value: "1"
+      - key: PORT
+        value: "8080"
+      - key: LEGACYLENS_EMBEDDER
+        value: hash
+      - key: XAI_API_KEY
+        sync: false
+    healthCheckPath: /health

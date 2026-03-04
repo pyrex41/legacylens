@@ -23,7 +23,11 @@ end module mm`
 	}
 
 	embed := NewHashEmbedder(384)
-	store := NewSQLiteStore(embed.Dimension())
+	store := NewProductionSQLiteStore(embed.Dimension(), ":memory:")
+	if err := store.Init(context.Background()); err != nil {
+		t.Fatalf("init store: %v", err)
+	}
+	defer store.Close()
 	cfg := DefaultPipelineConfig()
 	cfg.Workers = 2
 	cfg.QueueSize = 4

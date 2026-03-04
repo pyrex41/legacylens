@@ -11,9 +11,12 @@ const (
 	ChunkTypeModule     ChunkType = "module"
 	ChunkTypeSubroutine ChunkType = "subroutine"
 	ChunkTypeFunction   ChunkType = "function"
-	ChunkTypeTypeDef    ChunkType = "type"
+	ChunkTypeDef        ChunkType = "type"
+	ChunkTypeProgram    ChunkType = "program"
+	ChunkTypeInterface  ChunkType = "interface"
 	ChunkTypeComment    ChunkType = "comment"
 	ChunkTypeUnknown    ChunkType = "unknown"
+	ChunkTypeDoc        ChunkType = "doc"
 )
 
 type Parameter struct {

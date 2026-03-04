@@ -1,0 +1,81 @@
+services:
+  legacylens:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LEGACYLENS_REPO=/data/repo
+      - LEGACYLENS_BACKEND=sqlite
+      - LEGACYLENS_SERVE=1
+      - PORT=8080
+      - LEGACYLENS_EMBEDDER=hash
+    volumes:
+      - ./third_party/M_blas:/data/repo:ro
+      - db-data:/home/app
+    restart: unless-stopped
+    profiles:
+      - default
+
+  legacylens-embed:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LEGACYLENS_REPO=/data/repo
+      - LEGACYLENS_BACKEND=sqlite
+      - LEGACYLENS_SERVE=1
+      - PORT=8080
+      - EMBED_URL=http://embeddings:80/v1/embeddings
+      - EMBED_CACHE_DIR=/home/app/.embed_cache
+    volumes:
+      - ./third_party/M_blas:/data/repo:ro
+      - db-data:/home/app
+      - embed-cache:/home/app/.embed_cache
+    depends_on:
+      embeddings:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - embeddings
+
+  legacylens-llm:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LEGACYLENS_REPO=/data/repo
+      - LEGACYLENS_BACKEND=cozo
+      - LEGACYLENS_SERVE=1
+      - PORT=8080
+      - LEGACYLENS_EMBEDDER=hash
+      - XAI_API_KEY=${XAI_API_KEY:-}
+    volumes:
+      - ./third_party/M_blas:/data/repo:ro
+      - db-data:/home/app
+    restart: unless-stopped
+    profiles:
+      - llm
+
+  embeddings:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    command: --model-id sentence-transformers/all-MiniLM-L6-v2 --port 80
+    ports:
+      - "8081:80"
+    volumes:
+      - hf-cache:/data
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped
+    profiles:
+      - embeddings
+
+volumes:
+  db-data:
+  embed-cache:
+  hf-cache:

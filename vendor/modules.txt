@@ -1,0 +1,119 @@
+# github.com/cozodb/cozo-lib-go v0.7.5
+## explicit; go 1.19
+github.com/cozodb/cozo-lib-go
+# github.com/dustin/go-humanize v1.0.1
+## explicit; go 1.16
+github.com/dustin/go-humanize
+# github.com/emirpasic/gods v1.18.1
+## explicit; go 1.2
+github.com/emirpasic/gods/containers
+github.com/emirpasic/gods/lists
+github.com/emirpasic/gods/lists/arraylist
+github.com/emirpasic/gods/trees
+github.com/emirpasic/gods/trees/binaryheap
+github.com/emirpasic/gods/utils
+# github.com/google/uuid v1.6.0
+## explicit
+github.com/google/uuid
+# github.com/grumpylabs/fastembed-go v1.0.3
+## explicit; go 1.21
+github.com/grumpylabs/fastembed-go
+# github.com/mattn/go-isatty v0.0.20
+## explicit; go 1.15
+github.com/mattn/go-isatty
+# github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
+## explicit
+github.com/mitchellh/colorstring
+# github.com/ncruces/go-strftime v1.0.0
+## explicit; go 1.17
+github.com/ncruces/go-strftime
+# github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec
+## explicit; go 1.12
+github.com/remyoudompheng/bigfft
+# github.com/rivo/uniseg v0.4.6
+## explicit; go 1.18
+github.com/rivo/uniseg
+# github.com/schollz/progressbar/v2 v2.15.0
+## explicit; go 1.13
+github.com/schollz/progressbar/v2
+# github.com/schollz/progressbar/v3 v3.14.1
+## explicit; go 1.13
+github.com/schollz/progressbar/v3
+# github.com/stretchr/objx v0.5.0
+## explicit; go 1.12
+github.com/stretchr/objx
+# github.com/sugarme/regexpset v0.0.0-20200920021344-4d4ec8eaf93c
+## explicit; go 1.14
+github.com/sugarme/regexpset
+# github.com/sugarme/tokenizer v0.2.3-0.20230829214935-448e79b1ed65
+## explicit; go 1.18
+github.com/sugarme/tokenizer
+github.com/sugarme/tokenizer/decoder
+github.com/sugarme/tokenizer/model
+github.com/sugarme/tokenizer/model/bpe
+github.com/sugarme/tokenizer/model/wordlevel
+github.com/sugarme/tokenizer/model/wordpiece
+github.com/sugarme/tokenizer/normalizer
+github.com/sugarme/tokenizer/pretokenizer
+github.com/sugarme/tokenizer/pretrained
+github.com/sugarme/tokenizer/processor
+github.com/sugarme/tokenizer/spm
+github.com/sugarme/tokenizer/util
+github.com/sugarme/tokenizer/util/slice
+# github.com/yalue/onnxruntime_go v1.7.0
+## explicit; go 1.19
+github.com/yalue/onnxruntime_go
+# golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
+## explicit; go 1.24.0
+golang.org/x/exp/constraints
+# golang.org/x/sys v0.37.0
+## explicit; go 1.24.0
+golang.org/x/sys/plan9
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/term v0.16.0
+## explicit; go 1.18
+golang.org/x/term
+# golang.org/x/text v0.14.0
+## explicit; go 1.18
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
+# modernc.org/libc v1.67.6
+## explicit; go 1.24.0
+modernc.org/libc
+modernc.org/libc/errno
+modernc.org/libc/fcntl
+modernc.org/libc/fts
+modernc.org/libc/grp
+modernc.org/libc/honnef.co/go/netdb
+modernc.org/libc/langinfo
+modernc.org/libc/limits
+modernc.org/libc/netdb
+modernc.org/libc/netinet/in
+modernc.org/libc/poll
+modernc.org/libc/pthread
+modernc.org/libc/pwd
+modernc.org/libc/signal
+modernc.org/libc/stdio
+modernc.org/libc/stdlib
+modernc.org/libc/sys/socket
+modernc.org/libc/sys/stat
+modernc.org/libc/sys/types
+modernc.org/libc/termios
+modernc.org/libc/time
+modernc.org/libc/unistd
+modernc.org/libc/utime
+modernc.org/libc/uuid
+modernc.org/libc/uuid/uuid
+modernc.org/libc/wctype
+# modernc.org/mathutil v1.7.1
+## explicit; go 1.21
+modernc.org/mathutil
+# modernc.org/memory v1.11.0
+## explicit; go 1.23.0
+modernc.org/memory
+# modernc.org/sqlite v1.46.1
+## explicit; go 1.24.0
+modernc.org/sqlite
+modernc.org/sqlite/lib
+modernc.org/sqlite/vtab

@@ -40,3 +40,19 @@ func FuseRRF(vectorResults, keywordResults []SearchResult, k int) []SearchResult
 	}
 	return out
 }
+
+// applyDocBoost multiplies doc chunk scores by DocBoost, then re-sorts and trims.
+func applyDocBoost(results []SearchResult, k int) []SearchResult {
+	for i := range results {
+		if results[i].Chunk.Type == ChunkTypeDoc {
+			results[i].HybridScore *= DocBoost
+		}
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].HybridScore > results[j].HybridScore
+	})
+	if k > 0 && len(results) > k {
+		results = results[:k]
+	}
+	return results
+}

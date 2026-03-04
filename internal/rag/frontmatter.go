@@ -9,14 +9,14 @@ func BuildFrontmatter(c Chunk) string {
 	var b strings.Builder
 	b.WriteString("---\n")
 	if c.Name != "" {
-		b.WriteString(fmt.Sprintf("title: %s\n", c.Name))
+		b.WriteString(fmt.Sprintf("title: %s\n", safeYAMLValue(c.Name)))
 	} else {
 		b.WriteString("title: unnamed\n")
 	}
 	if c.Description != "" {
-		b.WriteString(fmt.Sprintf("description: %s\n", c.Description))
+		b.WriteString(fmt.Sprintf("description: %s\n", safeYAMLValue(c.Description)))
 	} else {
-		b.WriteString("description: Fortran semantic unit\n")
+		b.WriteString(fmt.Sprintf("description: %s\n", safeYAMLValue("Fortran semantic unit")))
 	}
 	b.WriteString("parameters:\n")
 	if len(c.Parameters) == 0 {
@@ -31,8 +31,8 @@ func BuildFrontmatter(c Chunk) string {
 	}
 	b.WriteString("skills:\n")
 	if len(c.Skills) == 0 {
-		b.WriteString("  - fortran\n")
-		b.WriteString("  - legacy-code\n")
+		b.WriteString("  - " + safeYAMLValue("fortran") + "\n")
+		b.WriteString("  - " + safeYAMLValue("legacy-code") + "\n")
 	} else {
 		for _, s := range c.Skills {
 			b.WriteString("  - " + safeYAMLValue(s) + "\n")

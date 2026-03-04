@@ -1,0 +1,13 @@
+*.db
+*_bench_*.json
+run_go.sh
+gorun.sh
+validate.sh
+run_validate.sh
+_run_go.sh
+_validate.sh
+_run.sh
+.embed_cache/
+/legacylens
+libs/
+local_cache/

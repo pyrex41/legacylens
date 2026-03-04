@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LegacyLens</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1117;--surface:#1a1d27;--border:#2a2d3a;--text:#e4e6ed;--muted:#8b8fa3;--accent:#6c8cff;--accent-dim:#3a4a7a;--code-bg:#141620;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--purple:#a78bfa}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.container{max-width:960px;margin:0 auto;padding:24px 20px}
+
+header{text-align:center;padding:40px 0 32px}
+header h1{font-size:1.8rem;font-weight:700;letter-spacing:-0.02em}
+header h1 span{color:var(--accent)}
+header p{color:var(--muted);margin-top:4px;font-size:0.95rem}
+
+.search-bar{display:flex;gap:10px;margin-bottom:16px}
+.search-bar input[type=text]{flex:1;padding:12px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:1rem;outline:none;transition:border-color .2s}
+.search-bar input[type=text]:focus{border-color:var(--accent)}
+.search-bar button{padding:12px 24px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
+.search-bar button:hover{background:#5a7ae6}
+.search-bar button:disabled{opacity:.5;cursor:not-allowed}
+
+.controls{display:flex;gap:16px;align-items:center;margin-bottom:24px;flex-wrap:wrap}
+.controls label{color:var(--muted);font-size:0.875rem;display:flex;align-items:center;gap:6px}
+.controls select,.controls input[type=number]{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:0.875rem;outline:none}
+.controls select:focus,.controls input[type=number]:focus{border-color:var(--accent)}
+
+.mode-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.mode-toggle button{padding:6px 14px;border:none;background:transparent;color:var(--muted);font-size:0.875rem;font-weight:500;cursor:pointer;transition:all .15s}
+.mode-toggle button.active{background:var(--accent-dim);color:var(--accent);font-weight:600}
+.mode-toggle button:hover:not(.active){background:rgba(108,140,255,.08)}
+
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:24px;font-size:0.85rem;color:var(--muted)}
+.status-bar .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-weight:600;font-size:0.8rem}
+.badge-ok{background:rgba(74,222,128,.12);color:var(--green)}
+.badge-err{background:rgba(248,113,113,.12);color:var(--red)}
+
+.results{display:flex;flex-direction:column;gap:16px}
+
+.result-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden;transition:border-color .2s}
+.result-card:hover{border-color:var(--accent-dim)}
+
+.result-header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px 10px;gap:12px;flex-wrap:wrap}
+.result-title{font-weight:600;font-size:1.05rem}
+.result-title .rank{color:var(--muted);font-weight:400;margin-right:6px}
+.result-type{font-size:0.75rem;padding:2px 8px;border-radius:4px;background:var(--accent-dim);color:var(--accent);font-weight:600;text-transform:uppercase;white-space:nowrap}
+
+.result-location{padding:0 18px 8px;font-size:0.85rem}
+.result-location a{font-family:'SF Mono',Consolas,monospace;font-size:0.82rem}
+
+.result-scores{display:flex;gap:16px;padding:0 18px 12px;font-size:0.8rem;color:var(--muted)}
+.result-scores span{display:flex;align-items:center;gap:4px}
+.score-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-hybrid{background:var(--accent)}
+.dot-vector{background:var(--green)}
+.dot-keyword{background:var(--yellow)}
+
+.result-frontmatter{margin:0 18px 12px;padding:10px 14px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;font-family:'SF Mono',Consolas,monospace;font-size:0.78rem;white-space:pre-wrap;color:var(--muted);max-height:180px;overflow-y:auto;display:none}
+.result-frontmatter.open{display:block}
+
+.result-code{margin:0 18px 16px;padding:12px 14px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;font-family:'SF Mono',Consolas,monospace;font-size:0.8rem;white-space:pre;overflow-x:auto;max-height:320px;overflow-y:auto;line-height:1.5;display:none}
+.result-code.open{display:block}
+
+.result-toggles{display:flex;gap:8px;padding:0 18px 14px}
+.toggle-btn{padding:4px 10px;border:1px solid var(--border);border-radius:5px;background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;transition:all .15s}
+.toggle-btn:hover,.toggle-btn.active{border-color:var(--accent);color:var(--accent)}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .icon{font-size:2.5rem;margin-bottom:12px}
+.empty-state p{font-size:0.95rem}
+
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.explain-answer{padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;line-height:1.7}
+.explain-answer h2{font-size:1.15rem;font-weight:600;margin-bottom:12px;color:var(--accent)}
+.explain-answer p{margin-bottom:10px;font-size:0.92rem}
+.explain-answer ol{padding-left:20px;margin-bottom:14px}
+.explain-answer ol li{margin-bottom:8px;font-size:0.92rem}
+.explain-answer strong{color:var(--text)}
+.explain-answer code{font-family:'SF Mono',Consolas,monospace;font-size:0.84rem;background:var(--code-bg);padding:1px 5px;border-radius:3px;color:var(--green)}
+
+.explain-citations{padding:16px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px}
+.explain-citations h3{font-size:0.95rem;font-weight:600;margin-bottom:10px;color:var(--muted)}
+.citation-item{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:0.85rem;border-bottom:1px solid var(--border)}
+.citation-item:last-child{border-bottom:none}
+.citation-idx{color:var(--accent);font-weight:600;font-size:0.8rem;min-width:24px}
+.citation-symbol{font-weight:500}
+.citation-ref{font-family:'SF Mono',Consolas,monospace;font-size:0.8rem;color:var(--muted);cursor:pointer;transition:color .15s}
+.citation-ref:hover{color:var(--accent)}
+
+.symbol-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden;margin-bottom:12px;transition:border-color .2s}
+.symbol-card:hover{border-color:var(--accent-dim)}
+.symbol-header{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 18px 8px;gap:12px;flex-wrap:wrap}
+.symbol-name{font-weight:600;font-size:1rem}
+.symbol-location{padding:0 18px 6px;font-size:0.82rem}
+.symbol-location a{font-family:'SF Mono',Consolas,monospace;font-size:0.8rem}
+.symbol-explanation{padding:0 18px 12px;font-size:0.9rem;color:var(--text);line-height:1.6}
+.symbol-frontmatter{margin:0 18px 14px;padding:10px 14px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;font-family:'SF Mono',Consolas,monospace;font-size:0.78rem;white-space:pre-wrap;color:var(--muted);max-height:200px;overflow-y:auto;display:none}
+.symbol-frontmatter.open{display:block}
+.symbol-toggles{display:flex;gap:8px;padding:0 18px 12px}
+
+.section-label{font-size:0.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px;padding-left:2px}
+
+@media(max-width:600px){
+  .search-bar{flex-direction:column}
+  .controls{flex-direction:column;align-items:flex-start}
+  .result-scores{flex-wrap:wrap;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Legacy<span>Lens</span></h1>
+    <p>Semantic search over Fortran codebases with hybrid vector + keyword retrieval</p>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="queryInput" placeholder="Search code… e.g. &quot;matrix-vector multiply&quot;" autofocus>
+    <button id="searchBtn" onclick="doAction()">Search</button>
+  </div>
+
+  <div class="controls">
+    <div class="mode-toggle">
+      <button id="modeSearch" class="active" onclick="setMode('search')">Search</button>
+      <button id="modeExplain" onclick="setMode('explain')">Explain</button>
+    </div>
+    <label>Backend
+      <select id="backendSelect" onchange="switchBackend()">
+        <option value="sqlite">SQLite</option>
+        <option value="cozo">CozoDB</option>
+      </select>
+    </label>
+    <label>Results
+      <input type="number" id="topK" value="5" min="1" max="50" style="width:60px">
+    </label>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <span id="statusText">Ready</span>
+    <span class="badge badge-ok" id="statusBadge">connected</span>
+  </div>
+
+  <div id="resultsArea">
+    <div class="empty-state">
+      <div class="icon">&#128270;</div>
+      <p>Enter a query to search the indexed Fortran codebase</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const qInput = document.getElementById('queryInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const backendSel = document.getElementById('backendSelect');
+  const topKInput = document.getElementById('topK');
+  const statusText = document.getElementById('statusText');
+  const statusBadge = document.getElementById('statusBadge');
+  const resultsArea = document.getElementById('resultsArea');
+  const modeSearchBtn = document.getElementById('modeSearch');
+  const modeExplainBtn = document.getElementById('modeExplain');
+
+  let serverBackend = '';
+  let switchable = false;
+  let currentMode = 'search';
+
+  qInput.addEventListener('keydown', function(e){
+    if(e.key==='Enter') doAction();
+  });
+
+  checkHealth();
+
+  window.setMode = function(mode){
+    currentMode = mode;
+    modeSearchBtn.classList.toggle('active', mode==='search');
+    modeExplainBtn.classList.toggle('active', mode==='explain');
+    searchBtn.textContent = mode==='explain' ? 'Explain' : 'Search';
+    qInput.placeholder = mode==='explain'
+      ? 'Ask a question\u2026 e.g. "How does sgemv work?"'
+      : 'Search code\u2026 e.g. "matrix-vector multiply"';
+  };
+
+  function checkHealth(){
+    fetch('/health').then(r=>r.json()).then(d=>{
+      serverBackend = d.backend || '';
+      switchable = !!d.switchable;
+      statusBadge.className='badge badge-ok';
+      statusBadge.innerHTML='&#9679;&nbsp;'+serverBackend+' &middot; '+d.chunks+' chunks';
+      backendSel.value = serverBackend;
+      if(switchable && d.backends){
+        backendSel.innerHTML='';
+        d.backends.forEach(function(b){
+          var opt = document.createElement('option');
+          opt.value = b;
+          opt.textContent = b === 'sqlite' ? 'SQLite' : b === 'cozo' ? 'CozoDB' : b;
+          backendSel.appendChild(opt);
+        });
+        backendSel.value = serverBackend;
+        backendSel.disabled = false;
+      }
+    }).catch(()=>{
+      statusBadge.className='badge badge-err';
+      statusBadge.innerHTML='&#9679;&nbsp;disconnected';
+    });
+  }
+
+  window.switchBackend = function(){
+    if(!switchable){
+      statusText.textContent = 'Backend switch requires server restart with -backend '+backendSel.value;
+      return;
+    }
+    var target = backendSel.value;
+    if(target === serverBackend) return;
+    statusText.innerHTML = '<span class="spinner"></span>Switching to '+target+'\u2026';
+    backendSel.disabled = true;
+    fetch('/api/switch', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({backend: target})
+    })
+    .then(r=>{if(!r.ok) throw new Error('HTTP '+r.status); return r.json()})
+    .then(d=>{
+      serverBackend = d.backend;
+      statusBadge.innerHTML='&#9679;&nbsp;'+d.backend+' &middot; '+d.chunks+' chunks';
+      statusText.textContent = 'Switched to '+d.backend;
+      backendSel.value = d.backend;
+      backendSel.disabled = false;
+    })
+    .catch(err=>{
+      statusText.textContent = 'Switch failed: '+err.message;
+      backendSel.value = serverBackend;
+      backendSel.disabled = false;
+    });
+  };
+
+  window.doAction = function(){
+    if(currentMode === 'explain') doExplain();
+    else doSearch();
+  };
+
+  window.doSearch = function(){
+    const q = qInput.value.trim();
+    if(!q) return;
+    const k = parseInt(topKInput.value)||5;
+
+    searchBtn.disabled = true;
+    statusText.innerHTML = '<span class="spinner"></span>Searching\u2026';
+
+    fetch('/api/search', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query:q, k:k})
+    })
+    .then(r=>{if(!r.ok) throw new Error('HTTP '+r.status); return r.json()})
+    .then(data=>{
+      searchBtn.disabled=false;
+      const results = data.results||[];
+      statusText.textContent = results.length+' result'+(results.length!==1?'s':'')+' for \u201c'+q+'\u201d ('+data.backend+')';
+      renderResults(results);
+    })
+    .catch(err=>{
+      searchBtn.disabled=false;
+      statusText.textContent = 'Error: '+err.message;
+      resultsArea.innerHTML='<div class="empty-state"><p>Search failed. Check server connection.</p></div>';
+    });
+  };
+
+  window.doExplain = function(){
+    const q = qInput.value.trim();
+    if(!q) return;
+    const k = parseInt(topKInput.value)||5;
+
+    searchBtn.disabled = true;
+    statusText.innerHTML = '<span class="spinner"></span>Generating explanation\u2026';
+
+    fetch('/api/explain', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query:q, k:k})
+    })
+    .then(r=>{if(!r.ok) throw new Error('HTTP '+r.status); return r.json()})
+    .then(data=>{
+      searchBtn.disabled=false;
+      var nSymbols = (data.symbols||[]).length;
+      var nCitations = (data.citations||[]).length;
+      statusText.textContent = nSymbols+' symbol'+(nSymbols!==1?'s':'')+', '+nCitations+' citation'+(nCitations!==1?'s':'')+' for \u201c'+q+'\u201d ('+data.backend+')';
+      renderExplain(data);
+    })
+    .catch(err=>{
+      searchBtn.disabled=false;
+      statusText.textContent = 'Error: '+err.message;
+      resultsArea.innerHTML='<div class="empty-state"><p>Explain failed. Check server connection.</p></div>';
+    });
+  };
+
+  function renderExplain(data){
+    var html = '';
+
+    if(data.answer){
+      html += '<div class="explain-answer">'+renderMarkdown(data.answer)+'</div>';
+    }
+
+    var citations = data.citations||[];
+    if(citations.length){
+      html += '<div class="explain-citations"><h3>Citations</h3>';
+      citations.forEach(function(c, i){
+        html += '<div class="citation-item">'
+          +'<span class="citation-idx">['+(i+1)+']</span>'
+          +'<span class="citation-symbol">'+escHtml(c.symbol)+'</span>'
+          +'<a class="citation-ref" href="#" title="Copy citation" onclick="navigator.clipboard.writeText(\''+escJs(c.ref)+'\');this.textContent=\'Copied!\';setTimeout(()=>{this.textContent=\''+escJs(c.ref)+'\'},1200);return false">'+escHtml(c.ref)+'</a>'
+          +'</div>';
+      });
+      html += '</div>';
+    }
+
+    var symbols = data.symbols||[];
+    if(symbols.length){
+      html += '<div class="section-label">Symbols</div>';
+      symbols.forEach(function(s, i){
+        var loc = s.file+':'+s.start_line+'-'+s.end_line;
+        var uid = 'sym'+i;
+        html += '<div class="symbol-card">'
+          +'<div class="symbol-header">'
+          +'<div class="symbol-name">'+escHtml(s.name)+'</div>'
+          +'<span class="result-type">'+escHtml(s.type)+'</span>'
+          +'</div>'
+          +'<div class="symbol-location">'
+          +'<a href="#" onclick="navigator.clipboard.writeText(\''+escJs(loc)+'\');this.textContent=\'Copied!\';setTimeout(()=>{this.textContent=\''+escJs(loc)+'\'},1200);return false">'+escHtml(loc)+'</a>'
+          +'</div>'
+          +'<div class="symbol-explanation">'+escHtml(s.explanation)+'</div>'
+          +'<div class="symbol-toggles">'
+          +'<button class="toggle-btn" onclick="toggle(\''+uid+'-fm\',this)">Frontmatter</button>'
+          +'</div>'
+          +'<div class="symbol-frontmatter" id="'+uid+'-fm">'+escHtml(s.frontmatter||'')+'</div>'
+          +'</div>';
+      });
+    }
+
+    if(!html){
+      html = '<div class="empty-state"><p>No explanation generated. Try a different query.</p></div>';
+    }
+
+    resultsArea.innerHTML = html;
+  }
+
+  function renderMarkdown(md){
+    var lines = md.split('\n');
+    var html = '';
+    var inOl = false;
+    var olNum = 0;
+    for(var i=0; i<lines.length; i++){
+      var line = lines[i];
+      var h2 = line.match(/^##\s+(.+)/);
+      if(h2){ flushOl(); html += '<h2>'+inlineMarkdown(h2[1])+'</h2>'; continue; }
+      var h3 = line.match(/^###\s+(.+)/);
+      if(h3){ flushOl(); html += '<h3 style="font-size:0.95rem;margin:14px 0 8px;color:var(--muted)">'+inlineMarkdown(h3[1])+'</h3>'; continue; }
+      var li = line.match(/^\d+\.\s+(.+)/);
+      if(li){
+        if(!inOl){ inOl=true; olNum=0; html+='<ol>'; }
+        olNum++;
+        html += '<li>'+inlineMarkdown(li[1])+'</li>';
+        continue;
+      }
+      flushOl();
+      var trimmed = line.replace(/^\s+/,'');
+      if(trimmed.match(/^\[(\d+)\]/)){
+        html += '<div style="font-family:\'SF Mono\',Consolas,monospace;font-size:0.82rem;color:var(--muted);padding:2px 0">'+inlineMarkdown(trimmed)+'</div>';
+        continue;
+      }
+      if(trimmed === '') continue;
+      html += '<p>'+inlineMarkdown(trimmed)+'</p>';
+    }
+    flushOl();
+    return html;
+
+    function flushOl(){ if(inOl){ html+='</ol>'; inOl=false; } }
+  }
+
+  function inlineMarkdown(s){
+    s = escHtml(s);
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+    s = s.replace(/\u2014/g, ' &mdash; ');
+    return s;
+  }
+
+  function renderResults(results){
+    if(!results.length){
+      resultsArea.innerHTML='<div class="empty-state"><p>No results found. Try a different query.</p></div>';
+      return;
+    }
+    resultsArea.innerHTML='<div class="results">'+results.map((r,i)=>renderCard(r,i)).join('')+'</div>';
+  }
+
+  function renderCard(r, idx){
+    const loc = r.file+':'+r.start_line+'-'+r.end_line;
+    const fm = escHtml(r.frontmatter||'');
+    const code = escHtml(r.code||'');
+    const uid = 'r'+idx;
+    return '<div class="result-card">'
+      +'<div class="result-header">'
+      +'<div class="result-title"><span class="rank">#'+(idx+1)+'</span>'+escHtml(r.name)+'</div>'
+      +'<span class="result-type">'+escHtml(r.type)+'</span>'
+      +'</div>'
+      +'<div class="result-location">'
+      +'<a href="#" title="File citation: '+escHtml(loc)+'" onclick="navigator.clipboard.writeText(\''+escJs(loc)+'\');this.textContent=\'Copied!\';setTimeout(()=>{this.textContent=\''+escJs(loc)+'\'},1200);return false">'+escHtml(loc)+'</a>'
+      +'</div>'
+      +'<div class="result-scores">'
+      +'<span><span class="score-dot dot-hybrid"></span>hybrid '+r.hybrid_score.toFixed(4)+'</span>'
+      +'<span><span class="score-dot dot-vector"></span>vector '+r.vector_score.toFixed(4)+'</span>'
+      +'<span><span class="score-dot dot-keyword"></span>keyword '+r.keyword_score.toFixed(4)+'</span>'
+      +'</div>'
+      +'<div class="result-toggles">'
+      +'<button class="toggle-btn" onclick="toggle(\''+uid+'-code\',this)">Code</button>'
+      +'<button class="toggle-btn" onclick="toggle(\''+uid+'-fm\',this)">Frontmatter</button>'
+      +'</div>'
+      +'<div class="result-code" id="'+uid+'-code">'+code+'</div>'
+      +'<div class="result-frontmatter" id="'+uid+'-fm">'+fm+'</div>'
+      +'</div>';
+  }
+
+  window.toggle = function(id, btn){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const open = el.classList.toggle('open');
+    btn.classList.toggle('active', open);
+  };
+
+  function escHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escJs(s){
+    return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  }
+})();
+</script>
+</body>
+</html>

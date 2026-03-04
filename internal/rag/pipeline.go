@@ -2,6 +2,7 @@ package rag
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -20,18 +21,19 @@ type PipelineConfig struct {
 
 func DefaultPipelineConfig() PipelineConfig {
 	return PipelineConfig{
-		Workers:        4,
-		QueueSize:      64,
-		EnqueueTimeout: 2 * time.Second,
+		Workers:        2,
+		QueueSize:      256,
+		EnqueueTimeout: 5 * time.Minute,
 		MaxLinesChunk:  180,
 	}
 }
 
 type Pipeline struct {
-	cfg     PipelineConfig
-	chunker *FortranChunker
-	embed   Embedder
-	store   VectorStore
+	cfg       PipelineConfig
+	chunker   *FortranChunker
+	mdChunker *MarkdownChunker
+	embed     Embedder
+	store     VectorStore
 }
 
 func NewPipeline(cfg PipelineConfig, embed Embedder, store VectorStore) *Pipeline {
@@ -48,10 +50,11 @@ func NewPipeline(cfg PipelineConfig, embed Embedder, store VectorStore) *Pipelin
 		cfg.MaxLinesChunk = 180
 	}
 	return &Pipeline{
-		cfg:     cfg,
-		chunker: NewFortranChunker(cfg.MaxLinesChunk),
-		embed:   embed,
-		store:   store,
+		cfg:       cfg,
+		chunker:   NewFortranChunker(cfg.MaxLinesChunk),
+		mdChunker: NewMarkdownChunker(cfg.MaxLinesChunk),
+		embed:     embed,
+		store:     store,
 	}
 }
 
@@ -62,12 +65,28 @@ func (p *Pipeline) IngestRepo(ctx context.Context, repoPath string) (int, error)
 	if err := p.store.Init(ctx); err != nil {
 		return 0, err
 	}
-	files, err := listFortranFiles(repoPath)
+	f90Files, err := listFortranFiles(repoPath)
 	if err != nil {
 		return 0, err
 	}
-	if len(files) == 0 {
-		return 0, fmt.Errorf("no .f90 files found under %s", repoPath)
+	mdFiles, err := listMarkdownFiles(repoPath)
+	if err != nil {
+		return 0, err
+	}
+	if len(f90Files) == 0 && len(mdFiles) == 0 {
+		return 0, fmt.Errorf("no .f90 or .md files found under %s", repoPath)
+	}
+
+	type ingestJob struct {
+		path string
+		md   bool
+	}
+	var jobs []ingestJob
+	for _, fp := range f90Files {
+		jobs = append(jobs, ingestJob{path: fp})
+	}
+	for _, fp := range mdFiles {
+		jobs = append(jobs, ingestJob{path: fp, md: true})
 	}
 
 	ch := make(chan Chunk, p.cfg.QueueSize)
@@ -97,7 +116,7 @@ func (p *Pipeline) IngestRepo(ctx context.Context, repoPath string) (int, error)
 	}
 
 	count := 0
-	for _, fp := range files {
+	for _, job := range jobs {
 		select {
 		case <-ctx.Done():
 			close(ch)
@@ -105,13 +124,18 @@ func (p *Pipeline) IngestRepo(ctx context.Context, repoPath string) (int, error)
 			return count, ctx.Err()
 		default:
 		}
-		raw, err := os.ReadFile(fp)
+		raw, err := os.ReadFile(job.path)
 		if err != nil {
 			close(ch)
 			wg.Wait()
 			return count, err
 		}
-		chunks := p.chunker.ChunkFile(fp, string(raw))
+		var chunks []Chunk
+		if job.md {
+			chunks = p.mdChunker.ChunkFile(job.path, string(raw))
+		} else {
+			chunks = p.chunker.ChunkFile(job.path, string(raw))
+		}
 		for _, ck := range chunks {
 			timer := time.NewTimer(p.cfg.EnqueueTimeout)
 			select {
@@ -143,16 +167,30 @@ func (p *Pipeline) IngestRepo(ctx context.Context, repoPath string) (int, error)
 		return count, err
 	default:
 	}
+
+	// Build graph edges if the store supports it
+	if es, ok := p.store.(EdgeStore); ok {
+		if err := es.BuildEdges(ctx); err != nil {
+			return count, fmt.Errorf("build edges: %w", err)
+		}
+	}
+
 	return count, nil
 }
 
 type QueryEngine struct {
 	store VectorStore
 	embed Embedder
+	llm   LLMClient
 }
 
 func NewQueryEngine(store VectorStore, embed Embedder) *QueryEngine {
 	return &QueryEngine{store: store, embed: embed}
+}
+
+// WithLLM returns a copy of the QueryEngine with the given LLM client.
+func (q *QueryEngine) WithLLM(llm LLMClient) *QueryEngine {
+	return &QueryEngine{store: q.store, embed: q.embed, llm: llm}
 }
 
 func (q *QueryEngine) Search(ctx context.Context, text string, k int) ([]SearchResult, error) {
@@ -177,5 +215,70 @@ func listFortranFiles(root string) ([]string, error) {
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	return dedupFiles(files)
+}
+
+func listMarkdownFiles(root string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			name := d.Name()
+			if name == ".git" || name == "vendor" || name == "node_modules" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
+			files = append(files, path)
+		}
+		return nil
+	})
 	return files, err
+}
+
+// dedupFiles removes files with identical content, keeping the one with the
+// shorter path. This handles repos like M_blas where src/ and docs/fpm-ford/src/
+// contain the same .f90 files.
+func dedupFiles(files []string) ([]string, error) {
+	type entry struct {
+		path string
+		hash string
+	}
+	entries := make([]entry, 0, len(files))
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			return nil, err
+		}
+		h := fmt.Sprintf("%x", sha256.Sum256(raw))
+		entries = append(entries, entry{path: f, hash: h})
+	}
+	seen := map[string]string{} // hash → shortest path
+	for _, e := range entries {
+		if existing, ok := seen[e.hash]; ok {
+			if len(e.path) < len(existing) {
+				seen[e.hash] = e.path
+			}
+		} else {
+			seen[e.hash] = e.path
+		}
+	}
+	kept := make(map[string]bool, len(seen))
+	for _, p := range seen {
+		kept[p] = true
+	}
+	var deduped []string
+	for _, e := range entries {
+		if kept[e.path] {
+			deduped = append(deduped, e.path)
+			delete(kept, e.path) // only add once
+		}
+	}
+	return deduped, nil
 }
