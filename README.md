@@ -23,7 +23,7 @@ A RAG (Retrieval-Augmented Generation) engine for legacy Fortran codebases. Poin
 
 ```bash
 # Clone with submodules (includes example M_blas codebase)
-git clone --recurse-submodules https://github.com/reuben/legacylens.git
+git clone --recurse-submodules https://github.com/pyrex41/legacylens.git
 cd legacylens
 
 # Download CozoDB native library and build
