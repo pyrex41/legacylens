@@ -1,0 +1,12 @@
+- [x] Bootstrap Ralph loop assets (`loop.sh`, prompts, runbook) using `cursor-agent -p`.
+- [x] Scaffold Go project structure for dual-backend RAG architecture.
+- [x] Implement backpressure primitives (bounded channels, enqueue timeout, worker limits).
+- [x] Implement syntax-aware Fortran chunk extraction with skills-style frontmatter generation.
+- [x] Implement backend-agnostic retrieval interfaces and RRF hybrid fusion.
+- [x] Add compatibility dual-backend store implementations for rapid local iteration.
+- [ ] Replace compatibility stores with production SQLite (`FTS5 + sqlite-vec`) and CozoDB adapters.
+- [ ] Integrate true Fortran AST parsing via `tree-sitter-fortran`.
+- [ ] Integrate production embeddings (`all-MiniLM-L6-v2`) with deterministic caching.
+- [ ] Add Streamlit/FastAPI frontend with backend selector and snippet citation links.
+- [ ] Add benchmark harness and report output (latency, ingestion, relevance, DB size).
+- [ ] Add deployment artifacts (Dockerfile, Render/HF config).
